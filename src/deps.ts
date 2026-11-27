@@ -1,5 +1,5 @@
 export const SERVER_NAME = "gaussia-mcp";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.3.0";
 export const USER_AGENT = `${SERVER_NAME}/${SERVER_VERSION} (+https://gaussia.app)`;
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
