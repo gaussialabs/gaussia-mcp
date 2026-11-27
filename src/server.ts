@@ -5,12 +5,12 @@ import { z } from "zod";
 import { SERVER_NAME, SERVER_VERSION, type Deps } from "./deps.js";
 import { InputError, SourceError } from "./http.js";
 import { ToiCatalog } from "./sources/exofop.js";
-import { starInfo, toiLookup, type Ctx, type Output } from "./tools.js";
+import { starInfo, tessObservations, toiLookup, type Ctx, type Output } from "./tools.js";
 
 export { SERVER_NAME, SERVER_VERSION };
 
 const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table, MAST TIC).
-Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters.
+Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters, tess_observations for the sectors and light curves TESS has for it.
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
 
@@ -75,6 +75,18 @@ export function createServer(deps: Deps): McpServer {
       annotations: { title: "TIC star parameters", ...READ_WEB },
     },
     async (args, extra) => run(deps, "star_info", () => starInfo(ctx, args, extra.signal)),
+  );
+
+  server.registerTool(
+    "tess_observations",
+    {
+      title: "TESS sectors and light curves for a star",
+      description:
+        "Lists the TESS sectors that observed a TIC and which light curves exist per sector: whether the star fell in the full-frame images (MAST TESScut, with camera and CCD), SPOC 2-min and 20-s light curves (MAST CAOM), and high-level science product light curves such as QLP, TESS-SPOC, TASOC, TGLC and CDIPS with their cadence. Answers 'has this star got 2-min SPOC data?'. Uses the TIC position from MAST; three MAST requests, usually 2-5 s.",
+      inputSchema: { tic_id: TIC },
+      annotations: { title: "TESS sectors and light curves for a star", ...READ_WEB },
+    },
+    async (args, extra) => run(deps, "tess_observations", () => tessObservations(ctx, args, extra.signal)),
   );
 
   return server;

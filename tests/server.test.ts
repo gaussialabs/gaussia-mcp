@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { connect, testDeps } from "./helpers.js";
 
-const TOOLS = ["star_info", "toi_lookup"];
+const TOOLS = ["star_info", "tess_observations", "toi_lookup"];
 
 describe("server surface", () => {
   it("lists the tools, each read-only with a description and described parameters", async () => {

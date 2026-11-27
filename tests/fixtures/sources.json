@@ -17,6 +17,22 @@
     "mast-tic-missing.json": {
       "fetched": "2026-11-27",
       "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Catalogs.Filtered.Tic, ID=9999999999, no such star)"
+    },
+    "mast-caom-307210830.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Caom.Filtered, obs_collection TESS+HLSP, target_name=307210830, timeseries)"
+    },
+    "mast-caom-150428135.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Caom.Filtered, obs_collection TESS+HLSP, target_name=150428135, timeseries)"
+    },
+    "mast-tesscut-307210830.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/tesscut/api/v0.1/sector?ra=124.531756290083&dec=-68.3129998725044&radius=0m"
+    },
+    "mast-tesscut-150428135.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/tesscut/api/v0.1/sector?ra=97.0967865903209&dec=-65.5793115481931&radius=0m"
     }
   }
 }

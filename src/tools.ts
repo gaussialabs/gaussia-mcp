@@ -2,7 +2,8 @@ import type { Deps } from "./deps.js";
 import { InputError } from "./http.js";
 import { parseTic, parseToi } from "./ids.js";
 import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop.js";
-import { MAST_INVOKE, TIC_SOURCE, ticById } from "./sources/mast.js";
+import { coverage, type SectorCoverage } from "./coverage.js";
+import { CAOM_SOURCE, caomTimeseries, MAST_INVOKE, TESSCUT_SOURCE, TESSCUT_URL, tesscutSectors, TIC_SOURCE, ticById } from "./sources/mast.js";
 
 /** A tool result: a short summary for people, structured data for code. */
 export type Output = { summary: string; data: Record<string, unknown> };
@@ -82,4 +83,45 @@ export async function starInfo(ctx: Ctx, args: { tic_id: string | number }, sign
   const warn = row.disposition ? ` TIC disposition: ${row.disposition}${row.duplicate_id ? ` (duplicate of TIC ${row.duplicate_id})` : ""}.` : "";
   const summary = `TIC ${tic} (${row.objType ?? "?"}, ${row.lumclass ?? "class ?"}): Tmag ${fmt(row.Tmag)}, Teff ${row.Teff ?? "?"} K, R ${fmt(row.rad)} R_sun, M ${fmt(row.mass)} M_sun, distance ${fmt(row.d)} pc, contamination ratio ${fmt(row.contratio, 3)}. Source: MAST TIC v8.2.${warn}`;
   return { summary, data: { found: true, star, source } };
+}
+
+export async function tessObservations(ctx: Ctx, args: { tic_id: string | number }, signal?: AbortSignal): Promise<Output> {
+  const tic = parseTic(args.tic_id);
+  const star = await ticById(ctx.deps, tic, signal);
+  if (!star || star.ra === null || star.dec === null) {
+    throw new InputError(`MAST has no TIC entry with coordinates for ID ${tic}`);
+  }
+  const [footprint, products] = await Promise.all([tesscutSectors(ctx.deps, star.ra, star.dec, signal), caomTimeseries(ctx.deps, tic, signal)]);
+  const cov = coverage(footprint, products);
+  const list = (f: (s: SectorCoverage) => boolean) => cov.sectors.filter(f).map((s) => s.sector);
+  const spoc2 = list((s) => s.spoc_2min);
+  const data = {
+    tic_id: tic,
+    ra_deg: star.ra,
+    dec_deg: star.dec,
+    sector_count: cov.sectors.length,
+    has_spoc_2min: spoc2.length > 0,
+    sectors_ffi: list((s) => s.in_ffi),
+    sectors_spoc_2min: spoc2,
+    sectors_spoc_20s: list((s) => s.spoc_20s),
+    sectors_with_hlsp: list((s) => s.hlsp.length > 0),
+    multi_sector_hlsp: cov.multi_sector_hlsp,
+    sectors: cov.sectors,
+    sources: [
+      { name: TIC_SOURCE, url: MAST_INVOKE, service: "Mast.Catalogs.Filtered.Tic" },
+      { name: TESSCUT_SOURCE, url: TESSCUT_URL },
+      { name: CAOM_SOURCE, url: MAST_INVOKE, service: "Mast.Caom.Filtered" },
+    ],
+    fetched_at: iso(ctx.deps.now()),
+  };
+  const summary = [
+    `TIC ${tic}: ${cov.sectors.length} TESS sectors with data at MAST.`,
+    `In full-frame images (TESScut): ${data.sectors_ffi.join(", ") || "none"}.`,
+    `SPOC 2-min light curves: ${spoc2.length ? spoc2.join(", ") : "none"}.`,
+    data.sectors_spoc_20s.length ? `SPOC 20-s light curves: ${data.sectors_spoc_20s.join(", ")}.` : "",
+    `High-level light curves (QLP, TESS-SPOC, ...) in sectors: ${data.sectors_with_hlsp.join(", ") || "none"}.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return { summary, data };
 }

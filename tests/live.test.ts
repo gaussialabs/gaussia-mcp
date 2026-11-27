@@ -23,4 +23,10 @@ describe.skipIf(!LIVE)("live: MAST", () => {
     expect(s.tmag).toBeCloseTo(9.41, 1);
     expect(s.distance_pc).toBeGreaterThan(10);
   });
+  it("tess_observations finds SPOC 2-min sectors for L 98-59", { timeout: 90_000 }, async () => {
+    const { call } = await connect(deps());
+    const d = data(await call("tess_observations", { tic_id: 307210830 }));
+    expect(d.has_spoc_2min).toBe(true);
+    expect(d.sectors_spoc_2min).toEqual(expect.arrayContaining([2, 5, 8]));
+  });
 });

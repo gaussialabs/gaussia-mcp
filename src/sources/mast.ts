@@ -66,3 +66,48 @@ export async function ticById(deps: Deps, tic: number, signal?: AbortSignal): Pr
   );
   return rows.find((r) => Number(r.ID) === tic) ?? null;
 }
+
+export const CAOM_SOURCE = "MAST CAOM observations";
+export const TESSCUT_SOURCE = "MAST TESScut sector lookup";
+export const TESSCUT_URL = "https://mast.stsci.edu/tesscut/api/v0.1/sector";
+
+export type CaomRow = {
+  obs_collection: string;
+  provenance_name: string | null;
+  target_name: string;
+  sequence_number: number | null;
+  t_exptime: number | null;
+  obs_id: string;
+};
+
+/** Every TESS time-series product MAST lists for a TIC: SPOC (2-min, 20-s) and HLSP light curves (QLP, TESS-SPOC, ...). */
+export async function caomTimeseries(deps: Deps, tic: number, signal?: AbortSignal): Promise<CaomRow[]> {
+  return mastInvoke<CaomRow>(
+    deps,
+    CAOM_SOURCE,
+    {
+      service: "Mast.Caom.Filtered",
+      pagesize: 5000,
+      page: 1,
+      params: {
+        columns: "obs_collection,provenance_name,target_name,sequence_number,t_exptime,dataproduct_type,obs_id",
+        filters: [
+          { paramName: "obs_collection", values: ["TESS", "HLSP"] },
+          { paramName: "target_name", values: [String(tic)] },
+          { paramName: "dataproduct_type", values: ["timeseries"] },
+        ],
+      },
+    },
+    signal,
+  );
+}
+
+export type SectorFootprint = { sector: number; camera: number; ccd: number };
+
+/** Sectors whose full-frame images cover a position (TESScut, keyless). */
+export async function tesscutSectors(deps: Deps, ra: number, dec: number, signal?: AbortSignal): Promise<SectorFootprint[]> {
+  const url = `${TESSCUT_URL}?ra=${ra}&dec=${dec}&radius=0m`;
+  const res = await requestJson<{ results?: { sector: string; camera: string; ccd: string }[] }>(deps, url, { source: TESSCUT_SOURCE, timeoutMs: 45_000, signal });
+  if (!Array.isArray(res.results)) throw new SourceError(TESSCUT_SOURCE, "answer has no results list");
+  return res.results.map((r) => ({ sector: Number(r.sector), camera: Number(r.camera), ccd: Number(r.ccd) })).filter((r) => Number.isInteger(r.sector));
+}

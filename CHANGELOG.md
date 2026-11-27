@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0 · 2026-11-27
+
+- `tess_observations`: the TESS sectors that observed a TIC, one row per sector: in the full-frame images or not (MAST TESScut, with camera and CCD), SPOC 2-min and 20-s light curves (MAST CAOM), and HLSP light curves (QLP, TESS-SPOC, TASOC, TGLC, CDIPS, ...) with cadence. Top-level `has_spoc_2min` and sector lists.
+- SPOC multi-sector DV products are not counted as sectors; multi-sector HLSPs (e.g. DIAMANTE) are listed separately.
+- Recorded TESScut and CAOM responses for L 98-59 and TOI-700 (fetched 2026-11-27).
+
 ## v0.2.0 · 2026-11-27
 
 - `star_info`: a star's TIC v8.2 parameters from MAST (Tmag, Teff, log g, radius, mass, density, luminosity class, distance, parallax, contamination ratio, TIC disposition, Gaia DR2 / 2MASS / HIP IDs). Says so when the TIC has no such ID.

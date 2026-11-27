@@ -4,12 +4,13 @@ An MCP server that gives AI agents real TESS exoplanet tools, for [Gaussia](http
 
 Every tool reads public data at call time. No API keys, no accounts, no mock data: when a source is down, the tool says which one.
 
-Status: v0.2.0, early. Tools so far:
+Status: v0.3.0, early. Tools so far:
 
 | Tool | What it does | Source |
 |---|---|---|
 | `toi_lookup` | TOIs by TIC ID or TOI number, with dispositions and ephemerides as given | ExoFOP TOI table |
 | `star_info` | TIC v8.2 star parameters: Tmag, Teff, radius, mass, density, distance, contamination | MAST TIC catalog |
+| `tess_observations` | TESS sectors for a star: FFI footprint, SPOC 2-min / 20-s light curves, HLSP light curves (QLP, TESS-SPOC, ...) | MAST TESScut + CAOM |
 
 ## Install
 
