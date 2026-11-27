@@ -15,3 +15,12 @@ describe.skipIf(!LIVE)("live: ExoFOP", () => {
     expect(r.source.rows_in_table).toBeGreaterThan(7000);
   });
 });
+
+describe.skipIf(!LIVE)("live: MAST", () => {
+  it("star_info returns L 98-59 from the TIC", { timeout: 60_000 }, async () => {
+    const { call } = await connect(deps());
+    const s = data(await call("star_info", { tic_id: 307210830 })).star;
+    expect(s.tmag).toBeCloseTo(9.41, 1);
+    expect(s.distance_pc).toBeGreaterThan(10);
+  });
+});

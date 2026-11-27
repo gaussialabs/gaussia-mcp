@@ -4,11 +4,12 @@ An MCP server that gives AI agents real TESS exoplanet tools, for [Gaussia](http
 
 Every tool reads public data at call time. No API keys, no accounts, no mock data: when a source is down, the tool says which one.
 
-Status: v0.1.0, early. Tools so far:
+Status: v0.2.0, early. Tools so far:
 
 | Tool | What it does | Source |
 |---|---|---|
 | `toi_lookup` | TOIs by TIC ID or TOI number, with dispositions and ephemerides as given | ExoFOP TOI table |
+| `star_info` | TIC v8.2 star parameters: Tmag, Teff, radius, mass, density, distance, contamination | MAST TIC catalog |
 
 ## Install
 
@@ -36,7 +37,7 @@ pnpm typecheck
 
 ## Data credits
 
-This research uses the Exoplanet Follow-up Observing Program (ExoFOP; DOI 10.26134/ExoFOP5) website, operated by the California Institute of Technology under contract with NASA. TESS data are public NASA data.
+This research uses the Exoplanet Follow-up Observing Program (ExoFOP; DOI 10.26134/ExoFOP5) website, operated by the California Institute of Technology under contract with NASA. The TESS Input Catalog (Stassun et al. 2019, AJ 158, 138) is served by the Mikulski Archive for Space Telescopes (MAST) at STScI. TESS data are public NASA data.
 
 ## License
 

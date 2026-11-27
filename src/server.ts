@@ -5,12 +5,12 @@ import { z } from "zod";
 import { SERVER_NAME, SERVER_VERSION, type Deps } from "./deps.js";
 import { InputError, SourceError } from "./http.js";
 import { ToiCatalog } from "./sources/exofop.js";
-import { toiLookup, type Ctx, type Output } from "./tools.js";
+import { starInfo, toiLookup, type Ctx, type Output } from "./tools.js";
 
 export { SERVER_NAME, SERVER_VERSION };
 
-const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table).
-Use toi_lookup to see which TESS Objects of Interest a star already has.
+const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table, MAST TIC).
+Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters.
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
 
@@ -63,6 +63,18 @@ export function createServer(deps: Deps): McpServer {
       annotations: { title: "Look up TESS Objects of Interest", ...READ_WEB },
     },
     async (args, extra) => run(deps, "toi_lookup", () => toiLookup(ctx, args, extra.signal)),
+  );
+
+  server.registerTool(
+    "star_info",
+    {
+      title: "TIC star parameters",
+      description:
+        "Returns a star's parameters from the TESS Input Catalog (TIC v8.2) at MAST: TESS magnitude, Teff (K), log g, radius and mass (solar), density (solar), luminosity class, distance (pc), parallax, contamination ratio, TIC disposition (e.g. SPLIT, DUPLICATE, ARTIFACT) and Gaia DR2 / 2MASS / HIP IDs. Values are the catalog's, not a fit. Usually 1-3 s.",
+      inputSchema: { tic_id: TIC },
+      annotations: { title: "TIC star parameters", ...READ_WEB },
+    },
+    async (args, extra) => run(deps, "star_info", () => starInfo(ctx, args, extra.signal)),
   );
 
   return server;

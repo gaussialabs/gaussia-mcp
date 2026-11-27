@@ -5,6 +5,18 @@
       "fetched": "2026-11-27",
       "url": "https://exofop.ipac.caltech.edu/tess/download_toi.php?sort=toi&output=csv",
       "edit": "Row subset of the full table (8,175 rows): the header plus the TOIs on TIC 307210830 (L 98-59) and TIC 150428135 (TOI-700), every TOI within 20 arcmin of either star, TOI 101.01 and TOI 7102.01. Rows are unchanged."
+    },
+    "mast-tic-307210830.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Catalogs.Filtered.Tic, ID=307210830)"
+    },
+    "mast-tic-150428135.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Catalogs.Filtered.Tic, ID=150428135)"
+    },
+    "mast-tic-missing.json": {
+      "fetched": "2026-11-27",
+      "url": "https://mast.stsci.edu/api/v0/invoke (Mast.Catalogs.Filtered.Tic, ID=9999999999, no such star)"
     }
   }
 }
