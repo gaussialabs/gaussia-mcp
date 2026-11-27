@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.9.0 · 2026-11-27
+
+- MCP resources: `gaussia://rules/crossmatch` (the cross-match rules, generated from the same constants the tool uses), `gaussia://sources` (every endpoint and its credit line), `gaussia://spec/commitment` (SPEC.md) and `gaussia://vectors/commitment`.
+- MCP prompt `filter_signal`: the Filter step for one signal: `crossmatch_signal`, then `vet_signal`, then `tess_observations`, then a short note that uses only tool numbers and says "candidate", never "planet".
+
 ## v0.8.0 · 2026-11-27
 
 - `vet_signal`: two rough physical checks from the host star's TIC radius, mass and contamination ratio. (1) Implied planet radius from the depth (Rp/R* = √depth, plus a version with the TIC contamination removed), flagging `deep_eclipse` (Rp/R* ≥ 0.5) and `too_large_for_planet` (> 2 R_Jup). (2) The observed duration against the longest central transit for a circular orbit (Kepler's third law), flagging `too_long` (> 1.5×), `very_short` (< 0.15×) and `inside_star`. Also `crowded` when the contamination ratio is above 0.5.
