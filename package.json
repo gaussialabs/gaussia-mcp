@@ -3,7 +3,14 @@
   "version": "0.9.1",
   "description": "MCP server for Gaussia: TOI lookup, signal cross-match against TOIs and confirmed planets, TESS sector and light-curve coverage, TIC star parameters, and blind-matching commitments. Public NASA/MAST/ExoFOP data, no API keys.",
   "license": "Apache-2.0",
-  "homepage": "https://gaussia.app",
+  "homepage": "https://github.com/gaussialabs/gaussia-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gaussialabs/gaussia-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gaussialabs/gaussia-mcp/issues"
+  },
   "author": "Gaussia",
   "type": "module",
   "bin": {
