@@ -5,7 +5,7 @@ import { z } from "zod";
 import { SERVER_NAME, SERVER_VERSION, type Deps } from "./deps.js";
 import { InputError, SourceError } from "./http.js";
 import { ToiCatalog } from "./sources/exofop.js";
-import { crossmatchSignal, starInfo, tessObservations, toiLookup, type Ctx, type Output } from "./tools.js";
+import { crossmatchSignal, sealedCommit, starInfo, tessObservations, toiLookup, verifyReveal, type Ctx, type Output } from "./tools.js";
 
 export { SERVER_NAME, SERVER_VERSION };
 
@@ -13,8 +13,10 @@ const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public
 Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters, tess_observations for the sectors and light curves TESS has for it.
 Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs and confirmed planets on the star, including period aliases and transit times.
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
+sealed_commit and verify_reveal compute and check blind-matching commitments (SPEC.md); they run offline and send nothing.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
 
+const READ_LOCAL = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
 const READ_WEB = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } as const;
 
 const TIC = z.union([z.string().min(1).max(30), z.number().int().positive()]).describe('TESS Input Catalog ID: 307210830 or "TIC 307210830".');
@@ -107,6 +109,52 @@ export function createServer(deps: Deps): McpServer {
       annotations: { title: "Cross-match a transit signal", ...READ_WEB },
     },
     async (args, extra) => run(deps, "crossmatch_signal", () => crossmatchSignal(ctx, args, extra.signal)),
+  );
+
+  const B32 = (what: string) => z.string().min(66).max(66).describe(`${what}: 32 bytes, 0x followed by 64 hex characters.`);
+  const WALLET = z.string().min(42).max(42).describe("Node wallet address (0x + 40 hex). Mixed case must be a valid EIP-55 checksum.");
+
+  server.registerTool(
+    "sealed_commit",
+    {
+      title: "Compute a blind-matching commitment",
+      description:
+        "Computes a Gaussia blind-matching commitment: keccak256(abi.encode(bytes32 jobId, bytes32 resultHash, address wallet, bytes32 salt)), as defined in SPEC.md with shared test vectors. A node publishes this before seeing the other node's result and reveals the inputs later. If no salt is given, 32 random bytes are generated and returned: keep them secret until the reveal. Offline, nothing is sent or stored.",
+      inputSchema: {
+        job_id: B32("Job ID"),
+        result_hash: B32("Hash of the node's result"),
+        wallet: WALLET,
+        salt: B32("Secret salt (omit to generate one)").optional(),
+      },
+      annotations: { title: "Compute a blind-matching commitment", ...READ_LOCAL, idempotentHint: false },
+    },
+    async (args) => run(deps, "sealed_commit", async () => sealedCommit(args)),
+  );
+
+  server.registerTool(
+    "verify_reveal",
+    {
+      title: "Check node reveals against their commitments",
+      description:
+        "Checks one to three node reveals (job ID, result hash, wallet, salt) against the commitments the nodes published, using the SPEC.md scheme. With two or more reveals it also applies the matching rule: verified when at least two distinct wallets revealed the same result for the same job (others are outliers), mismatch when no result has a majority (send the job to a third node), incomplete otherwise. Offline.",
+      inputSchema: {
+        reveals: z
+          .array(
+            z.object({
+              commitment: B32("The commitment the node published"),
+              job_id: B32("Job ID"),
+              result_hash: B32("Revealed result hash"),
+              wallet: WALLET,
+              salt: B32("Revealed salt"),
+            }),
+          )
+          .min(1)
+          .max(3)
+          .describe("One to three reveals of the same job."),
+      },
+      annotations: { title: "Check node reveals", ...READ_LOCAL },
+    },
+    async (args) => run(deps, "verify_reveal", async () => verifyReveal(args)),
   );
 
   return server;

@@ -2,6 +2,7 @@ import type { Deps } from "./deps.js";
 import { InputError } from "./http.js";
 import { parseTic, parseToi } from "./ids.js";
 import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop.js";
+import { checkReveal, commitment, matchReveals, randomSalt, type Reveal } from "./commit.js";
 import { crossmatch, RATIOS, toBjd, type Known, type Signal } from "./crossmatch.js";
 import { ARCHIVE_SOURCE, ARCHIVE_TAP, planetsByTic, type ArchivePlanet } from "./sources/archive.js";
 import { coverage, type SectorCoverage } from "./coverage.js";
@@ -200,4 +201,24 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
   };
   const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star.${table.stale ? `\nWarning: ExoFOP ${table.stale}.` : ""}`;
   return { summary, data };
+}
+
+export function sealedCommit(args: { job_id: string; result_hash: string; wallet: string; salt?: string }): Output {
+  const generated = args.salt === undefined;
+  const salt = args.salt ?? randomSalt();
+  const c = commitment({ ...args, salt });
+  const data = { ...c, salt_generated: generated, scheme: "keccak256(abi.encode(bytes32 jobId, bytes32 resultHash, address wallet, bytes32 salt))" };
+  const summary = `Commitment ${c.commitment} for job ${c.job_id}, wallet ${c.wallet}.${generated ? ` Salt generated here: ${c.salt}. Keep it secret until the reveal; without it the commitment cannot be opened.` : ""}`;
+  return { summary, data };
+}
+
+export function verifyReveal(args: { reveals: Reveal[] }): Output {
+  const checks = args.reveals.map((r, i) => checkReveal(r, i));
+  const outcome = checks.length >= 2 ? matchReveals(checks) : null;
+  const lines = checks.map((c) => `reveal ${c.index}: ${c.valid ? "opens its commitment" : `does NOT open its commitment${c.error ? ` (${c.error})` : ` (recomputed ${c.recomputed})`}`}`);
+  if (outcome) {
+    lines.push(`match: ${outcome.status}${outcome.agreed_result_hash ? `, result ${outcome.agreed_result_hash} agreed by ${outcome.agreeing_wallets.length} wallets` : ""}`);
+    lines.push(...outcome.notes);
+  }
+  return { summary: lines.join("\n"), data: { all_valid: checks.every((c) => c.valid), reveals: checks, match: outcome } };
 }

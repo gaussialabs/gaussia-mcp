@@ -10,7 +10,9 @@
     "gaussia-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "SPEC.md",
+    "vectors"
   ],
   "engines": {
     "node": ">=20"
