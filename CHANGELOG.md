@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.0 · 2026-11-27
+
+- `star_info`: a star's TIC v8.2 parameters from MAST (Tmag, Teff, log g, radius, mass, density, luminosity class, distance, parallax, contamination ratio, TIC disposition, Gaia DR2 / 2MASS / HIP IDs). Says so when the TIC has no such ID.
+- MAST Portal API client (`/api/v0/invoke`, keyless) with a 45 s timeout. A MAST answer other than `COMPLETE` is reported as a source error with MAST's own message.
+- Recorded MAST responses for L 98-59, TOI-700 and a missing TIC (fetched 2026-11-27).
+
 ## v0.1.0 · 2026-11-27
 
 First release. A stdio MCP server for TESS exoplanet signals.
