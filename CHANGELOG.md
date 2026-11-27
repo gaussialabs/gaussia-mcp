@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.2 · 2026-11-27
+
+- `--http`: a stateless Streamable HTTP transport (POST `/mcp`, GET `/healthz`). It binds to 127.0.0.1:3333 by default (`--host`, `--port`) and refuses foreign `Host` headers to block DNS rebinding (`--allow-host` adds one). There is no auth. All requests share one TOI table cache. `--help` and `--version` added.
+- `pnpm demo` (`scripts/demo.mjs`): runs the built server over stdio and calls every tool against the live sources.
+- README rewritten with real demo outputs from 2026-11-27, Claude Code / Claude Desktop config, the cross-match rules, honest limits and data credits. `package.json` points at github.com/gaussialabs/gaussia-mcp.
+
 ## v0.9.1 · 2026-11-27
 
 - `crossmatch_signal` also checks TOIs on neighbouring stars within `neighbour_radius_arcsec` (default 126″, six 21″ TESS pixels; 0 turns it off). A match returns `known_toi` with the neighbour's TIC and separation: the signal most likely leaks in from that star.
