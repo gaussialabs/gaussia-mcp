@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { connect, testDeps } from "./helpers.js";
 
-const TOOLS = ["crossmatch_signal", "sealed_commit", "star_info", "tess_observations", "toi_lookup", "verify_reveal"];
+const TOOLS = ["crossmatch_signal", "sealed_commit", "star_info", "tess_observations", "toi_lookup", "verify_reveal", "vet_signal"];
 
 describe("server surface", () => {
   it("lists the tools, each read-only with a description and described parameters", async () => {

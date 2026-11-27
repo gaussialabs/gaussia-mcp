@@ -5,6 +5,7 @@ import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop
 import { checkReveal, commitment, matchReveals, randomSalt, type Reveal } from "./commit.js";
 import { crossmatch, RATIOS, toBjd, type Known, type Signal } from "./crossmatch.js";
 import { ARCHIVE_SOURCE, ARCHIVE_TAP, planetsByTic, type ArchivePlanet } from "./sources/archive.js";
+import { vet, type VetInput } from "./vet.js";
 import { coverage, type SectorCoverage } from "./coverage.js";
 import { CAOM_SOURCE, caomTimeseries, MAST_INVOKE, TESSCUT_SOURCE, TESSCUT_URL, tesscutSectors, TIC_SOURCE, ticById } from "./sources/mast.js";
 
@@ -221,4 +222,20 @@ export function verifyReveal(args: { reveals: Reveal[] }): Output {
     lines.push(...outcome.notes);
   }
   return { summary: lines.join("\n"), data: { all_valid: checks.every((c) => c.valid), reveals: checks, match: outcome } };
+}
+
+export async function vetSignal(ctx: Ctx, args: { tic_id: string | number } & VetInput, signal?: AbortSignal): Promise<Output> {
+  const tic = parseTic(args.tic_id);
+  const row = await ticById(ctx.deps, tic, signal);
+  if (!row) throw new InputError(`MAST has no TIC entry with ID ${tic}`);
+  const star = { radius_rsun: row.rad, mass_msun: row.mass, contamination_ratio: row.contratio };
+  const v = vet(args, star);
+  const missing = [row.rad === null && "radius", row.mass === null && "mass"].filter(Boolean);
+  const lines = [
+    `TIC ${tic} (R ${fmt(row.rad)} R_sun, M ${fmt(row.mass)} M_sun from TIC v8.2): Rp/R* ${fmt(v.radius_ratio, 3)}, Rp ≈ ${fmt(v.planet_radius_earth, 3)} R_earth${v.planet_radius_jupiter !== null ? ` (${fmt(v.planet_radius_jupiter, 3)} R_Jup)` : ""}.`,
+    v.max_duration_hours !== null ? `Longest central transit at P=${args.period_days} d: ${fmt(v.max_duration_hours, 3)} h (a/R* ${fmt(v.a_over_rstar, 3)}); observed ${args.duration_hours} h = ${fmt(v.duration_ratio, 3)}x.` : `Duration not checked: the TIC has no stellar ${missing.join(" or ")}.`,
+    v.flags.length ? `Flags:\n${v.flags.map((f) => `- ${f.code}: ${f.message}`).join("\n")}` : "No flags from these two checks.",
+    "Rough screens only; odd/even, secondary eclipse and shape need the light curve and are not run here.",
+  ];
+  return { summary: lines.join("\n"), data: { tic_id: tic, signal: { period_days: args.period_days, duration_hours: args.duration_hours, depth_ppm: args.depth_ppm }, star, ...v, source: { name: TIC_SOURCE, url: MAST_INVOKE, fetched_at: iso(ctx.deps.now()) } } };
 }

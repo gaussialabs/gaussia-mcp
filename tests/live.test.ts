@@ -36,4 +36,9 @@ describe.skipIf(!LIVE)("live: MAST", () => {
     expect(d.has_spoc_2min).toBe(true);
     expect(d.sectors_spoc_2min).toEqual(expect.arrayContaining([2, 5, 8]));
   });
+  it("vet_signal passes L 98-59 c's TOI values", { timeout: 60_000 }, async () => {
+    const { call } = await connect(deps());
+    const d = data(await call("vet_signal", { tic_id: 307210830, period_days: 3.6906758578, duration_hours: 1.107, depth_ppm: 1657 }));
+    expect(d.flags).toEqual([]);
+  });
 });

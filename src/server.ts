@@ -5,13 +5,13 @@ import { z } from "zod";
 import { SERVER_NAME, SERVER_VERSION, type Deps } from "./deps.js";
 import { InputError, SourceError } from "./http.js";
 import { ToiCatalog } from "./sources/exofop.js";
-import { crossmatchSignal, sealedCommit, starInfo, tessObservations, toiLookup, verifyReveal, type Ctx, type Output } from "./tools.js";
+import { crossmatchSignal, sealedCommit, starInfo, tessObservations, toiLookup, verifyReveal, vetSignal, type Ctx, type Output } from "./tools.js";
 
 export { SERVER_NAME, SERVER_VERSION };
 
 const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table, NASA Exoplanet Archive, MAST).
 Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters, tess_observations for the sectors and light curves TESS has for it.
-Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs and confirmed planets on the star, including period aliases and transit times.
+Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs and confirmed planets on the star, including period aliases and transit times. vet_signal adds two rough physical checks (implied planet radius, duration vs the star's density).
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
 sealed_commit and verify_reveal compute and check blind-matching commitments (SPEC.md); they run offline and send nothing.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
@@ -109,6 +109,23 @@ export function createServer(deps: Deps): McpServer {
       annotations: { title: "Cross-match a transit signal", ...READ_WEB },
     },
     async (args, extra) => run(deps, "crossmatch_signal", () => crossmatchSignal(ctx, args, extra.signal)),
+  );
+
+  server.registerTool(
+    "vet_signal",
+    {
+      title: "Rough physical checks on a transit signal",
+      description:
+        "Two quick sanity checks on a transit signal using the host star's TIC v8.2 radius, mass and contamination ratio from MAST: (1) implied planet radius from the depth (Rp/R* = sqrt(depth), no limb darkening), flagging depths and radii that only a stellar companion produces; (2) the observed duration against the longest central transit a circular orbit around this star allows (Kepler's third law), flagging durations far too long or too short. Returns the numbers, flags and the assumptions. It does not read the light curve: odd/even depths, secondary eclipses and transit shape are not tested.",
+      inputSchema: {
+        tic_id: TIC,
+        period_days: z.number().positive().max(2000).describe("Orbital period of the signal in days."),
+        duration_hours: z.number().positive().max(72).describe("Transit duration in hours (first to fourth contact)."),
+        depth_ppm: z.number().positive().max(1_000_000).describe("Transit depth in parts per million (1% = 10000 ppm)."),
+      },
+      annotations: { title: "Rough physical checks on a transit signal", ...READ_WEB },
+    },
+    async (args, extra) => run(deps, "vet_signal", () => vetSignal(ctx, args, extra.signal)),
   );
 
   const B32 = (what: string) => z.string().min(66).max(66).describe(`${what}: 32 bytes, 0x followed by 64 hex characters.`);
