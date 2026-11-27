@@ -50,9 +50,12 @@ async function run(deps: Deps, name: string, fn: () => Promise<Output>): Promise
   }
 }
 
-/** A fresh McpServer with every Gaussia tool. Transport wiring is in index.ts so tests can use an in-memory pair. */
-export function createServer(deps: Deps): McpServer {
-  const ctx: Ctx = { deps, tois: new ToiCatalog(deps) };
+/**
+ * A fresh McpServer with every Gaussia tool. Transport wiring is in index.ts so tests can use an in-memory pair.
+ * Pass a shared ToiCatalog when several servers run in one process (the HTTP transport makes one per request).
+ */
+export function createServer(deps: Deps, tois: ToiCatalog = new ToiCatalog(deps)): McpServer {
+  const ctx: Ctx = { deps, tois };
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION }, { instructions: INSTRUCTIONS });
 
   server.registerTool(
