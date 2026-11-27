@@ -1,6 +1,6 @@
 # Gaussia blind-matching commitment (draft v0)
 
-Status: draft. Gaussia's node network, job coordinator and contracts are not deployed yet (see the whitepaper). This document fixes the commitment format so that every implementation computes the same bytes. The sibling repo `gaussia-match` is meant to follow this file and the vectors in `vectors/commitment.json`; this repo is the first implementation.
+Status: draft. Gaussia's node network, job coordinator and contracts are not deployed yet (see the whitepaper). This document fixes the commitment format so that every implementation computes the same bytes. The sibling repo [`gaussia-match`](https://github.com/gaussialabs/gaussia-match) implements the same commitment (`commitHash`, plus a Solidity reference library); both vectors in `vectors/commitment.json` give identical results there (checked 2026-11-27).
 
 ## 1. Why
 

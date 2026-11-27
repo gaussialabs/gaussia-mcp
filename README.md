@@ -208,6 +208,11 @@ pnpm build && pnpm demo
 
 The server only reads these public services and does not redistribute their data. The recorded responses in `tests/fixtures` are small samples kept for tests.
 
+## Related repos
+
+- [`gaussia-search`](https://github.com/gaussialabs/gaussia-search): the open transit search a node runs on TESS light curves.
+- [`gaussia-match`](https://github.com/gaussialabs/gaussia-match): commit-reveal matching, tiebreak, sealed votes and candidate hashes. It uses the same commitment as `sealed_commit` here; the vectors in `vectors/commitment.json` match in both.
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE). Security reports: [SECURITY.md](SECURITY.md).
