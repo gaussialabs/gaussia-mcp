@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.1 · 2026-11-27
+
+- `crossmatch_signal` also checks TOIs on neighbouring stars within `neighbour_radius_arcsec` (default 126″, six 21″ TESS pixels; 0 turns it off). A match returns `known_toi` with the neighbour's TIC and separation: the signal most likely leaks in from that star.
+- The target position comes from its own TOI rows when it has any, otherwise from the MAST TIC (one extra request). If MAST has no position, the error says how to skip the check.
+- `gaussia://rules/crossmatch` documents the neighbour rule.
+
 ## v0.9.0 · 2026-11-27
 
 - MCP resources: `gaussia://rules/crossmatch` (the cross-match rules, generated from the same constants the tool uses), `gaussia://sources` (every endpoint and its credit line), `gaussia://spec/commitment` (SPEC.md) and `gaussia://vectors/commitment`.
