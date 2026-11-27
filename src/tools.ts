@@ -2,6 +2,7 @@ import type { Deps } from "./deps.js";
 import { InputError } from "./http.js";
 import { parseTic, parseToi } from "./ids.js";
 import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop.js";
+import { crossmatch, RATIOS, toBjd, type Known, type Signal } from "./crossmatch.js";
 import { coverage, type SectorCoverage } from "./coverage.js";
 import { CAOM_SOURCE, caomTimeseries, MAST_INVOKE, TESSCUT_SOURCE, TESSCUT_URL, tesscutSectors, TIC_SOURCE, ticById } from "./sources/mast.js";
 
@@ -10,6 +11,9 @@ export type Output = { summary: string; data: Record<string, unknown> };
 
 /** Everything the tools share for the life of one server. */
 export type Ctx = { deps: Deps; tois: ToiCatalog };
+
+/** Default relative period tolerance for a match (0.2%). */
+export const DEFAULT_PERIOD_TOLERANCE = 0.002;
 
 const iso = (ms: number) => new Date(ms).toISOString();
 const fmt = (n: number | null, digits = 4) => (n === null ? "?" : Number(n.toPrecision(digits)).toString());
@@ -123,5 +127,55 @@ export async function tessObservations(ctx: Ctx, args: { tic_id: string | number
   ]
     .filter(Boolean)
     .join("\n");
+  return { summary, data };
+}
+
+export type CrossmatchArgs = {
+  tic_id: string | number;
+  period_days: number;
+  epoch: number;
+  epoch_format?: "auto" | "bjd" | "btjd";
+  duration_hours: number;
+  period_tolerance?: number;
+};
+
+export function toiToKnown(t: Toi): Known {
+  return {
+    kind: "toi",
+    id: `TOI-${t.toi}`,
+    tic_id: t.tic_id,
+    period_days: t.period_days,
+    period_err_days: t.period_err_days,
+    epoch_bjd: t.epoch_bjd,
+    epoch_err_days: t.epoch_err_days,
+    duration_hours: t.duration_hours,
+    disposition: t.tfopwg_disposition ?? t.tess_disposition,
+    note: t.comments,
+  };
+}
+
+export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: AbortSignal): Promise<Output> {
+  const tic = parseTic(args.tic_id);
+  const epoch = toBjd(args.epoch, args.epoch_format ?? "auto");
+  if (epoch === null) throw new InputError(`epoch ${args.epoch} is neither BJD_TDB (~2,458,000-2,462,000) nor BTJD (~1,300-5,000); set epoch_format`);
+  const tol = args.period_tolerance ?? DEFAULT_PERIOD_TOLERANCE;
+  const sig: Signal = { period_days: args.period_days, epoch_bjd: epoch, duration_hours: args.duration_hours };
+
+  const table = await ctx.tois.get(signal);
+  const known = table.rows.filter((r) => r.tic_id === tic).map(toiToKnown);
+  const result = crossmatch(sig, known, tol);
+
+  const data = {
+    tic_id: tic,
+    signal: sig,
+    verdict: result.verdict,
+    reasons: result.reasons,
+    matches: result.matches,
+    near_misses: result.near_misses,
+    checked: { tois_on_star: known.length },
+    settings: { period_tolerance: tol, ratios: RATIOS.map((r) => (r.m === 1 ? `${r.n}` : `${r.n}/${r.m}`)) },
+    sources: [{ name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt) }],
+  };
+  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${known.length} TOI(s) on the star (ExoFOP, fetched ${iso(table.fetchedAt)}).`;
   return { summary, data };
 }

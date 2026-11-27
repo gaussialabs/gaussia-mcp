@@ -14,6 +14,13 @@ describe.skipIf(!LIVE)("live: ExoFOP", () => {
     expect(r.count).toBeGreaterThanOrEqual(3);
     expect(r.source.rows_in_table).toBeGreaterThan(7000);
   });
+  it("crossmatch_signal: TOI-700 d's published ephemeris is a known TOI, a random period is not", { timeout: 180_000 }, async () => {
+    const { call } = await connect(deps());
+    const d = data(await call("crossmatch_signal", { tic_id: 150428135, period_days: 37.4236838, epoch: 2458330.486155, duration_hours: 3.37 }));
+    expect(["known_toi", "known_planet"]).toContain(d.verdict);
+    const r = data(await call("crossmatch_signal", { tic_id: 150428135, period_days: 4.1234, epoch: 2459400.5, duration_hours: 2 }));
+    expect(r.verdict).toBe("no_match");
+  });
 });
 
 describe.skipIf(!LIVE)("live: MAST", () => {

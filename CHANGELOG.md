@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0 · 2026-11-27
+
+- `crossmatch_signal`: checks a transit signal (TIC, period, epoch, duration) against the TOIs on the same star. A match needs the period at known × n/m (1, 1/2, 2, 1/3, 3, 2/3, 3/2) within a relative tolerance (default 0.2%, or 3σ of the known period if larger) and transit times that coincide after propagating the TOI ephemeris (window: half the longer duration, or 3σ of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse.
+- Verdicts `known_toi`, `alias_of_known`, `no_match`, each with reasons; period matches whose transit times do not line up are returned as `near_misses`.
+- Epochs in BJD_TDB or BTJD (auto-detected or set with `epoch_format`).
+- Alias and epoch math tests, plus tool tests on the recorded ExoFOP table (L 98-59 c at 1× and 2×, a TOI-101.01 secondary eclipse, a random period).
+
 ## v0.3.0 · 2026-11-27
 
 - `tess_observations`: the TESS sectors that observed a TIC, one row per sector: in the full-frame images or not (MAST TESScut, with camera and CCD), SPOC 2-min and 20-s light curves (MAST CAOM), and HLSP light curves (QLP, TESS-SPOC, TASOC, TGLC, CDIPS, ...) with cadence. Top-level `has_spoc_2min` and sector lists.
