@@ -4,14 +4,14 @@ An MCP server that gives AI agents real TESS exoplanet tools, for [Gaussia](http
 
 Every tool reads public data at call time. No API keys, no accounts, no mock data: when a source is down, the tool says which one.
 
-Status: v0.9.0, early. Tools so far:
+Status: v0.9.1, early. Tools so far:
 
 | Tool | What it does | Source |
 |---|---|---|
 | `toi_lookup` | TOIs by TIC ID or TOI number, with dispositions and ephemerides as given | ExoFOP TOI table |
 | `star_info` | TIC v8.2 star parameters: Tmag, Teff, radius, mass, density, distance, contamination | MAST TIC catalog |
 | `tess_observations` | TESS sectors for a star: FFI footprint, SPOC 2-min / 20-s light curves, HLSP light curves (QLP, TESS-SPOC, ...) | MAST TESScut + CAOM |
-| `crossmatch_signal` | Checks a transit signal against the TOIs and confirmed planets on its star: period aliases n/m up to 3, transit-time alignment, secondary eclipse at phase 0.5. Verdict `known_planet`, `known_toi`, `alias_of_known` or `no_match` | ExoFOP TOI table + NASA Exoplanet Archive |
+| `crossmatch_signal` | Checks a transit signal against the TOIs and confirmed planets on its star and TOIs on neighbouring stars: period aliases n/m up to 3, transit-time alignment, secondary eclipse at phase 0.5. Verdict `known_planet`, `known_toi`, `alias_of_known` or `no_match` | ExoFOP TOI table + NASA Exoplanet Archive |
 | `vet_signal` | Two rough physical checks from the TIC star: implied planet radius from the depth, duration against the longest transit the star allows | MAST TIC catalog |
 | `sealed_commit` | Blind-matching commitment `keccak256(abi.encode(jobId, resultHash, wallet, salt))` ([SPEC.md](SPEC.md)) | offline |
 | `verify_reveal` | Checks 1-3 node reveals against their commitments and applies the two-node matching rule | offline |

@@ -12,7 +12,8 @@ describe("crossmatch_signal against the TOI table", () => {
     expect(d.verdict).toBe("known_planet");
     expect(d.matches.map((m: { known: { id: string } }) => m.known.id)).toEqual(["L 98-59 c", "TOI-175.01"]);
     expect(d.matches[0].epoch.aligned).toBe(true);
-    expect(d.checked).toEqual({ tois_on_star: 3, confirmed_planets_on_star: 5 });
+    expect(d.checked).toMatchObject({ tois_on_star: 3, confirmed_planets_on_star: 5, tois_on_neighbours: 0, neighbour_radius_arcsec: 126 });
+    expect(d.checked.target_position.from).toBe("ExoFOP TOI table");
     expect(text(r)).toMatch(/^Verdict for TIC 307210830, P=3.6906758578 d: known_planet/);
   });
   it("TOI-700 d is known_planet", async () => {
@@ -63,5 +64,27 @@ describe("crossmatch_signal against the TOI table", () => {
     const { call } = await connect(testDeps());
     const r = await call("crossmatch_signal", { tic_id: 1, period_days: 3, epoch: 500000, duration_hours: 2 });
     expect(text(r)).toMatch(/^invalid_input: epoch 500000 is neither/);
+  });
+
+  it("TOI-2220.01's signal seen on TOI-700 is flagged as the neighbour's TOI (15.5 arcmin apart, radius widened)", async () => {
+    const { call } = await connect(testDeps());
+    const args = { tic_id: 150428135, period_days: 1.39265494226559, epoch: 2459363.006828, duration_hours: 2.0 };
+    expect(data(await call("crossmatch_signal", args)).verdict).toBe("no_match");
+    const d = data(await call("crossmatch_signal", { ...args, neighbour_radius_arcsec: 1200 }));
+    expect(d.verdict).toBe("known_toi");
+    expect(d.matches[0].known).toMatchObject({ id: "TOI-2220.01", tic_id: 150437346 });
+    expect(d.matches[0].known.separation_arcsec).toBeCloseTo(930, -1);
+    expect(d.matches[0].reason).toMatch(/on neighbour TIC 150437346/);
+  });
+  it("uses the MAST position for a star without TOIs, and skips the lookup when the radius is 0", async () => {
+    const routes = [TOI_ROUTE, { match: /exoplanetarchive/, file: "archive-pscomppars-150437346.json" }, { match: /Catalogs\.Filtered\.Tic/, file: "mast-tic-missing.json" }];
+    const f = fakeFetch(routes);
+    const { call } = await connect(testDeps({ fetch: f.fetch }));
+    const args = { tic_id: 9999999999, period_days: 3, epoch: 2459000, duration_hours: 2 };
+    expect(text(await call("crossmatch_signal", args))).toMatch(/^invalid_input: MAST has no TIC entry .* set neighbour_radius_arcsec to 0/);
+    const n = f.calls.length;
+    const d = data(await call("crossmatch_signal", { ...args, neighbour_radius_arcsec: 0 }));
+    expect(d.verdict).toBe("no_match");
+    expect(f.calls.slice(n).some((c) => /mast/.test(c))).toBe(false);
   });
 });

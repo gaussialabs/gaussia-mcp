@@ -23,7 +23,16 @@ export type Known = {
   disposition: string | null;
   /** Free text such as ExoFOP comments ("L 98-59 c; TOI 175.01"). */
   note: string | null;
+  /** Set for a TOI on a neighbouring star: its distance from the target in arcseconds. */
+  separation_arcsec?: number;
 };
+
+/** Angular separation of two positions in degrees, in arcseconds (haversine, stable at small angles). */
+export function separationArcsec(ra1: number, dec1: number, ra2: number, dec2: number): number {
+  const r = Math.PI / 180;
+  const a = Math.sin(((dec2 - dec1) * r) / 2) ** 2 + Math.cos(dec1 * r) * Math.cos(dec2 * r) * Math.sin(((ra2 - ra1) * r) / 2) ** 2;
+  return (2 * Math.asin(Math.min(1, Math.sqrt(a))) * 180 * 3600) / Math.PI;
+}
 
 export type Ratio = { n: number; m: number };
 
@@ -118,13 +127,14 @@ export type CrossmatchResult = { verdict: Verdict; reasons: string[]; matches: M
 
 const ratioLabel = (r: Ratio) => (r.m === 1 ? `${r.n}x` : `${r.n}/${r.m}x`);
 const f = (x: number, d = 3) => Number(x.toFixed(d)).toString();
-const name = (k: Known) => `${k.id}${k.disposition ? ` (${k.disposition})` : ""}`;
+const name = (k: Known) => `${k.id}${k.disposition ? ` (${k.disposition})` : ""}${k.separation_arcsec !== undefined ? ` on neighbour TIC ${k.tic_id} ${f(k.separation_arcsec, 1)}" away` : ""}`;
 
 /**
  * Match one signal against known objects. A match needs the period at known * n/m and, when the known
  * object has an epoch, transit times that line up. Verdict, strongest first:
  *  known_planet   - same period (1x) and aligned epoch as an archive planet
- *  known_toi      - same period (1x) and aligned epoch as a TOI
+ *  known_toi      - same period (1x) and aligned epoch as a TOI, on the star or on a neighbour (then the
+ *                   signal is most likely that neighbour's, leaking into the aperture)
  *  alias_of_known - an n/m alias with aligned epoch, a same-period signal at phase 0.5 (secondary eclipse),
  *                   or a period match to an object without a published epoch
  *  no_match       - none of the above. Not proof of a new planet: it only means these catalogs have nothing there.

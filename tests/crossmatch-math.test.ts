@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { atHalfPhase, crossmatch, epochCheck, periodMatch, RATIOS, toBjd, type Known } from "../src/crossmatch.js";
+import { atHalfPhase, crossmatch, epochCheck, periodMatch, RATIOS, separationArcsec, toBjd, type Known } from "../src/crossmatch.js";
 
 const T = 2459000;
 const known = (over: Partial<Known> = {}): Known => ({
@@ -119,5 +119,13 @@ describe("epoch formats", () => {
     expect(toBjd(2459000.5, "auto")).toBe(2459000.5);
     expect(toBjd(100, "btjd")).toBe(2457100);
     expect(toBjd(500_000, "auto")).toBeNull();
+  });
+});
+
+describe("angular separation", () => {
+  it("measures arcseconds on the sky", () => {
+    expect(separationArcsec(10, 0, 10, 1)).toBeCloseTo(3600, 6);
+    expect(separationArcsec(0, 60, 1, 60)).toBeCloseTo(1800, 0);
+    expect(separationArcsec(359.99, 0, 0.01, 0)).toBeCloseTo(72, 3);
   });
 });

@@ -3,7 +3,7 @@ import { InputError } from "./http.js";
 import { parseTic, parseToi } from "./ids.js";
 import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop.js";
 import { checkReveal, commitment, matchReveals, randomSalt, type Reveal } from "./commit.js";
-import { crossmatch, RATIOS, toBjd, type Known, type Signal } from "./crossmatch.js";
+import { crossmatch, RATIOS, separationArcsec, toBjd, type Known, type Signal } from "./crossmatch.js";
 import { ARCHIVE_SOURCE, ARCHIVE_TAP, planetsByTic, type ArchivePlanet } from "./sources/archive.js";
 import { vet, type VetInput } from "./vet.js";
 import { coverage, type SectorCoverage } from "./coverage.js";
@@ -140,7 +140,11 @@ export type CrossmatchArgs = {
   epoch_format?: "auto" | "bjd" | "btjd";
   duration_hours: number;
   period_tolerance?: number;
+  neighbour_radius_arcsec?: number;
 };
+
+/** Default radius for TOIs on neighbouring stars: 6 TESS pixels of 21 arcsec. */
+export const DEFAULT_NEIGHBOUR_RADIUS_ARCSEC = 126;
 
 export function toiToKnown(t: Toi): Known {
   return {
@@ -181,9 +185,30 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
   const tol = args.period_tolerance ?? DEFAULT_PERIOD_TOLERANCE;
   const sig: Signal = { period_days: args.period_days, epoch_bjd: epoch, duration_hours: args.duration_hours };
 
+  const radius = args.neighbour_radius_arcsec ?? DEFAULT_NEIGHBOUR_RADIUS_ARCSEC;
   const [table, planets] = await Promise.all([ctx.tois.get(signal), planetsByTic(ctx.deps, tic, signal)]);
-  const tois = table.rows.filter((r) => r.tic_id === tic).map(toiToKnown);
-  const known = [...planets.map((p) => planetToKnown(p, tic)), ...tois];
+  const onStar = table.rows.filter((r) => r.tic_id === tic);
+  const tois = onStar.map(toiToKnown);
+
+  // TOIs on neighbouring stars: a bright eclipsing neighbour a few pixels away is a common source of false signals.
+  let neighbours: Known[] = [];
+  let position: { ra_deg: number; dec_deg: number; from: string } | null = null;
+  if (radius > 0) {
+    const fromToi = onStar.find((r) => r.ra_deg !== null && r.dec_deg !== null);
+    if (fromToi) position = { ra_deg: fromToi.ra_deg!, dec_deg: fromToi.dec_deg!, from: TOI_SOURCE };
+    else {
+      const star = await ticById(ctx.deps, tic, signal);
+      if (!star || star.ra === null || star.dec === null) throw new InputError(`MAST has no TIC entry with coordinates for ID ${tic}; set neighbour_radius_arcsec to 0 to skip the neighbour check`);
+      position = { ra_deg: star.ra, dec_deg: star.dec, from: TIC_SOURCE };
+    }
+    const p = position;
+    neighbours = table.rows
+      .filter((r) => r.tic_id !== tic && r.ra_deg !== null && r.dec_deg !== null && Math.abs(r.dec_deg - p.dec_deg) * 3600 <= radius)
+      .map((r) => ({ r, sep: separationArcsec(p.ra_deg, p.dec_deg, r.ra_deg!, r.dec_deg!) }))
+      .filter((x) => x.sep <= radius)
+      .map((x) => ({ ...toiToKnown(x.r), separation_arcsec: x.sep }));
+  }
+  const known = [...planets.map((p) => planetToKnown(p, tic)), ...tois, ...neighbours];
   const result = crossmatch(sig, known, tol);
 
   const data = {
@@ -193,14 +218,14 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
     reasons: result.reasons,
     matches: result.matches,
     near_misses: result.near_misses,
-    checked: { tois_on_star: tois.length, confirmed_planets_on_star: planets.length },
-    settings: { period_tolerance: tol, ratios: RATIOS.map((r) => (r.m === 1 ? `${r.n}` : `${r.n}/${r.m}`)) },
+    checked: { tois_on_star: tois.length, confirmed_planets_on_star: planets.length, tois_on_neighbours: neighbours.length, neighbour_radius_arcsec: radius, target_position: position },
+    settings: { period_tolerance: tol, neighbour_radius_arcsec: radius, ratios: RATIOS.map((r) => (r.m === 1 ? `${r.n}` : `${r.n}/${r.m}`)) },
     sources: [
       { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt), stale: table.stale },
       { name: ARCHIVE_SOURCE, url: ARCHIVE_TAP, fetched_at: iso(ctx.deps.now()) },
     ],
   };
-  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star.${table.stale ? `\nWarning: ExoFOP ${table.stale}.` : ""}`;
+  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star${radius > 0 ? `, and ${neighbours.length} TOI(s) on stars within ${radius}"` : ""}.${table.stale ? `\nWarning: ExoFOP ${table.stale}.` : ""}`;
   return { summary, data };
 }
 

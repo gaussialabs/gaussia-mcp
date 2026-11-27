@@ -99,7 +99,7 @@ export function createServer(deps: Deps): McpServer {
     {
       title: "Cross-match a transit signal against known objects",
       description:
-        "Checks a transit signal (TIC ID, period, epoch, duration) against the TOIs on the same star (ExoFOP TOI table) and its confirmed planets (NASA Exoplanet Archive, pscomppars table, matched by TIC ID). A match needs the period at the known period times n/m (n, m up to 3: 1, 1/2, 2, 1/3, 3, 2/3, 3/2) within the tolerance, and transit times that line up after propagating the known ephemeris (window: half the longer duration, or 3 sigma of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse. Returns verdict known_planet, known_toi, alias_of_known or no_match with a reason per match and period-only near misses. no_match only means these catalogs have nothing there; it is not a discovery.",
+        "Checks a transit signal (TIC ID, period, epoch, duration) against the TOIs on the same star (ExoFOP TOI table) and its confirmed planets (NASA Exoplanet Archive, pscomppars table, matched by TIC ID), plus TOIs on neighbouring stars within neighbour_radius_arcsec (a signal matching a neighbour's TOI is most likely that neighbour's). A match needs the period at the known period times n/m (n, m up to 3: 1, 1/2, 2, 1/3, 3, 2/3, 3/2) within the tolerance, and transit times that line up after propagating the known ephemeris (window: half the longer duration, or 3 sigma of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse. Returns verdict known_planet, known_toi, alias_of_known or no_match with a reason per match and period-only near misses. no_match only means these catalogs have nothing there; it is not a discovery.",
       inputSchema: {
         tic_id: TIC,
         period_days: z.number().positive().max(2000).describe("Orbital period of the signal in days."),
@@ -107,6 +107,7 @@ export function createServer(deps: Deps): McpServer {
         epoch_format: z.enum(["auto", "bjd", "btjd"]).optional().describe("auto (default) treats values above 2,400,000 as BJD_TDB and values below 100,000 as BTJD."),
         duration_hours: z.number().positive().max(72).describe("Transit duration in hours (first to fourth contact)."),
         period_tolerance: z.number().min(1e-7).max(0.05).optional().describe("Relative period tolerance for a match. Default 0.002 (0.2%). Widen for periods from few transits."),
+        neighbour_radius_arcsec: z.number().min(0).max(1200).optional().describe("Also check TOIs on stars within this many arcseconds. Default 126 (6 TESS pixels). 0 turns it off."),
       },
       annotations: { title: "Cross-match a transit signal", ...READ_WEB },
     },

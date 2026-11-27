@@ -7,7 +7,7 @@ import { RATIOS } from "./crossmatch.js";
 import { ARCHIVE_TAP } from "./sources/archive.js";
 import { TOI_URL } from "./sources/exofop.js";
 import { MAST_INVOKE, TESSCUT_URL } from "./sources/mast.js";
-import { DEFAULT_PERIOD_TOLERANCE } from "./tools.js";
+import { DEFAULT_NEIGHBOUR_RADIUS_ARCSEC, DEFAULT_PERIOD_TOLERANCE } from "./tools.js";
 
 /** SPEC.md and vectors/ ship next to dist/ (and next to src/ in a checkout). */
 function packageFile(rel: string): string | null {
@@ -31,15 +31,17 @@ Known objects on the star: TOIs from the ExoFOP TOI table, confirmed planets fro
    sigma = sqrt(sigma(Tk)^2 + (N * sigma(Pk))^2) and N is the number of known orbits between Tk and T0.
 3. Secondary eclipse. Same period (1x), transit times off, but the signal sits at phase 0.5 of the known orbit (same window).
 4. Planets not known to transit (tran_flag = 0) are compared by period only.
+5. Neighbours. TOIs on other stars within neighbour_radius_arcsec (default ${DEFAULT_NEIGHBOUR_RADIUS_ARCSEC}", 6 TESS pixels) are checked the same way;
+   a match means the signal most likely comes from that neighbour.
 
 Verdicts, strongest first:
 - known_planet: 1x period and aligned epoch with a confirmed planet.
-- known_toi: 1x period and aligned epoch with a TOI (any disposition, including false positives).
+- known_toi: 1x period and aligned epoch with a TOI (any disposition, including false positives), on the star or a neighbour.
 - alias_of_known: an aligned n/m alias, a secondary eclipse at phase 0.5, or a period match to an object without a transit epoch.
 - no_match: none of the above. Period matches whose transit times do not line up are listed as near_misses.
 
 no_match is not a discovery. It means these two catalogs have nothing at that period and phase on this star.
-Not covered: TOIs on neighbouring stars, eclipsing-binary catalogs, CTOIs that are not TOIs, and light-curve tests.
+Not covered: confirmed planets on neighbouring stars, eclipsing-binary catalogs, CTOIs that are not TOIs, and light-curve tests.
 `;
 }
 
