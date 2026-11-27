@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.0 · 2026-11-27
+
+- `sealed_commit`: computes the blind-matching commitment `keccak256(abi.encode(bytes32 jobId, bytes32 resultHash, address wallet, bytes32 salt))` with viem. Generates a 32-byte salt when none is given and says to keep it secret.
+- `verify_reveal`: checks one to three reveals against their commitments; with two or more, applies the matching rule (`verified` with outliers, `mismatch` → third node, `incomplete`). A wallet counts once.
+- `SPEC.md` (draft v0) defines the commitment and the matching rule; `vectors/commitment.json` holds two test vectors, checked with viem and independently with Python eth-abi + pycryptodome. Both ship in the npm package.
+- Mixed-case wallet addresses must carry a valid EIP-55 checksum.
+
 ## v0.6.0 · 2026-11-27
 
 - Every request is retried on network errors, timeouts and HTTP 408/425/429/5xx: 2 retries by default (`GAUSSIA_RETRIES`, 0-5), backoff 1 s then 3 s, or the server's `Retry-After` up to 10 s. Errors say how many attempts were made (`MAST TIC catalog: HTTP 502 after 3 attempts`). A 404 is not retried.
