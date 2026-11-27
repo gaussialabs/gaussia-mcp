@@ -36,8 +36,39 @@ function isTimeout(e: unknown): boolean {
   return e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
 }
 
-/** One HTTP request with a timeout. Returns the body text of a 2xx response or throws a SourceError. */
+const RETRY_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+class Retryable extends Error {}
+
+/** Seconds from a Retry-After header, capped at 10 s. */
+function retryAfterMs(res: Response): number | null {
+  const v = res.headers.get("retry-after");
+  if (!v) return null;
+  const s = Number(v);
+  return Number.isFinite(s) && s >= 0 ? Math.min(s, 10) * 1000 : null;
+}
+
+/**
+ * One HTTP request with a timeout per attempt and up to `deps.retries` retries on network errors,
+ * timeouts and HTTP 408/425/429/5xx (backoff 1 s, 3 s, 9 s ..., or Retry-After up to 10 s).
+ * Returns the body of a 2xx response or throws a SourceError that names the source and the attempts.
+ */
 export async function requestText(deps: Deps, url: string, opts: RequestOptions): Promise<string> {
+  const attempts = deps.retries + 1;
+  for (let i = 1; ; i++) {
+    try {
+      return await attempt(deps, url, opts);
+    } catch (e) {
+      if (!(e instanceof Retryable)) throw e;
+      const tail = attempts > 1 ? ` after ${i} attempt${i > 1 ? "s" : ""}` : "";
+      if (i >= attempts || opts.signal?.aborted) throw new SourceError(opts.source, `${e.message}${tail}`);
+      const wait = (e as Retryable & { waitMs?: number }).waitMs ?? 1000 * 3 ** (i - 1);
+      deps.log(`${opts.source}: ${e.message}, retrying in ${wait / 1000} s (attempt ${i + 1} of ${attempts})`);
+      await deps.sleep(wait);
+    }
+  }
+}
+
+async function attempt(deps: Deps, url: string, opts: RequestOptions): Promise<string> {
   const signals = [AbortSignal.timeout(opts.timeoutMs)];
   if (opts.signal) signals.push(opts.signal);
   let res: Response;
@@ -50,8 +81,13 @@ export async function requestText(deps: Deps, url: string, opts: RequestOptions)
     });
   } catch (e) {
     if (opts.signal?.aborted) throw new SourceError(opts.source, "request cancelled by the client");
-    if (isTimeout(e)) throw new SourceError(opts.source, `no answer within ${Math.round(opts.timeoutMs / 1000)} s`);
-    throw new SourceError(opts.source, `network error: ${e instanceof Error ? e.message : String(e)}`);
+    if (isTimeout(e)) throw new Retryable(`no answer within ${Math.round(opts.timeoutMs / 1000)} s`);
+    throw new Retryable(`network error: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (RETRY_STATUS.has(res.status)) {
+    const err = new Retryable(`HTTP ${res.status}`) as Retryable & { waitMs?: number };
+    err.waitMs = retryAfterMs(res) ?? undefined;
+    throw err;
   }
   if (!res.ok) throw new SourceError(opts.source, `HTTP ${res.status}`);
   return res.text();

@@ -4,7 +4,7 @@ An MCP server that gives AI agents real TESS exoplanet tools, for [Gaussia](http
 
 Every tool reads public data at call time. No API keys, no accounts, no mock data: when a source is down, the tool says which one.
 
-Status: v0.5.0, early. Tools so far:
+Status: v0.6.0, early. Tools so far:
 
 | Tool | What it does | Source |
 |---|---|---|
@@ -28,6 +28,15 @@ Claude Code, local checkout:
 ```sh
 claude mcp add gaussia -- node /path/to/gaussia-mcp/dist/index.js
 ```
+
+## Configuration
+
+All optional, set in the MCP client's `env`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `GAUSSIA_TOI_TTL_HOURS` | `6` | How long the downloaded ExoFOP TOI table is reused (0-168). If a refresh fails, the previous copy (up to 7 days old) is served and the result says it is stale. |
+| `GAUSSIA_RETRIES` | `2` | Extra attempts after a network error, timeout or HTTP 408/425/429/5xx (0-5). Backoff 1 s, 3 s, 9 s, or `Retry-After` up to 10 s. |
 
 ## Development
 

@@ -38,12 +38,12 @@ export async function toiLookup(ctx: Ctx, args: { tic_id?: string | number; toi?
     query = { toi: planet ? `${star}.${planet}` : String(star) };
     rows = table.rows.filter((r) => (planet ? r.toi === `${star}.${planet}` : r.toi.split(".")[0] === String(star)));
   }
-  const source = { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt), rows_in_table: table.rows.length };
+  const source = { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt), rows_in_table: table.rows.length, stale: table.stale };
   const label = "tic_id" in query ? `TIC ${query.tic_id}` : `TOI ${query.toi}`;
   const summary = rows.length
     ? `${rows.length} TOI${rows.length > 1 ? "s" : ""} for ${label} (ExoFOP, fetched ${source.fetched_at}):\n${rows.map(toiLine).join("\n")}`
     : `No TOI for ${label} in the ExoFOP TOI table (${table.rows.length} rows, fetched ${source.fetched_at}). That only means no TOI has been issued; it says nothing about whether the star has planets.`;
-  return { summary, data: { query, count: rows.length, tois: rows, source } };
+  return { summary: table.stale ? `${summary}\nWarning: ExoFOP ${table.stale}.` : summary, data: { query, count: rows.length, tois: rows, source } };
 }
 
 export async function starInfo(ctx: Ctx, args: { tic_id: string | number }, signal?: AbortSignal): Promise<Output> {
@@ -194,10 +194,10 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
     checked: { tois_on_star: tois.length, confirmed_planets_on_star: planets.length },
     settings: { period_tolerance: tol, ratios: RATIOS.map((r) => (r.m === 1 ? `${r.n}` : `${r.n}/${r.m}`)) },
     sources: [
-      { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt) },
+      { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt), stale: table.stale },
       { name: ARCHIVE_SOURCE, url: ARCHIVE_TAP, fetched_at: iso(ctx.deps.now()) },
     ],
   };
-  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star.`;
+  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star.${table.stale ? `\nWarning: ExoFOP ${table.stale}.` : ""}`;
   return { summary, data };
 }

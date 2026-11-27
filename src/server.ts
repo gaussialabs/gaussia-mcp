@@ -56,7 +56,7 @@ export function createServer(deps: Deps): McpServer {
     {
       title: "Look up TESS Objects of Interest",
       description:
-        "Finds TESS Objects of Interest (TOIs) by TIC ID or TOI number in the public ExoFOP TOI table and returns each one as ExoFOP gives it: TESS and TFOPWG dispositions (PC candidate, CP confirmed, KP known planet, APC, FP false positive, FA false alarm), period (days), epoch (BJD_TDB), duration (hours), depth (ppm), planet radius (Earth radii), SNR, sectors and comments. The first call downloads the whole table (about 4 MB; ExoFOP takes 10-30 s), later calls reuse it.",
+        "Finds TESS Objects of Interest (TOIs) by TIC ID or TOI number in the public ExoFOP TOI table and returns each one as ExoFOP gives it: TESS and TFOPWG dispositions (PC candidate, CP confirmed, KP known planet, APC, FP false positive, FA false alarm), period (days), epoch (BJD_TDB), duration (hours), depth (ppm), planet radius (Earth radii), SNR, sectors and comments. The first call downloads the whole table (about 4 MB; ExoFOP takes 10-30 s); later calls reuse it until it is 6 hours old (GAUSSIA_TOI_TTL_HOURS).",
       inputSchema: {
         tic_id: TIC.optional(),
         toi: z.union([z.string().min(1).max(20), z.number().positive()]).optional().describe('TOI number: 175 (all planets of TOI-175), 175.01, or "TOI-700". Give tic_id or toi, not both.'),

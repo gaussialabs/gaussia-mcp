@@ -57,7 +57,7 @@ export const ARCHIVE_ROUTES: Route[] = [
 ];
 
 export function testDeps(over: Partial<Deps> = {}): Deps {
-  return { fetch: fakeFetch([TOI_ROUTE, ...ARCHIVE_ROUTES]).fetch, log: () => {}, now: () => Date.UTC(2026, 10, 27), ...over };
+  return { fetch: fakeFetch([TOI_ROUTE, ...ARCHIVE_ROUTES]).fetch, log: () => {}, now: () => Date.UTC(2026, 10, 27), retries: 0, sleep: async () => {}, toiTtlMs: 6 * 3_600_000, ...over };
 }
 
 export async function connect(deps: Deps) {

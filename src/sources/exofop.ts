@@ -35,7 +35,12 @@ export type Toi = {
   comments: string | null;
 };
 
-export type ToiTable = { rows: Toi[]; fetchedAt: number };
+export type ToiTable = {
+  rows: Toi[];
+  fetchedAt: number;
+  /** Set when a refresh failed and the previous download is served instead; says why. */
+  stale: string | null;
+};
 
 const COLUMNS = {
   tic: "TIC ID",
@@ -136,9 +141,14 @@ export function parseToiCsv(text: string): Toi[] {
   return rows;
 }
 
+/** A previous download older than this is never served, even when a refresh fails. */
+export const MAX_STALE_MS = 7 * 24 * 3_600_000;
+
 /**
- * The TOI table (~4 MB, ~8,000 rows; ExoFOP takes 10-30 s to serve it). Downloaded once and kept
- * in memory for the life of the server process.
+ * The TOI table (~4 MB, ~8,000 rows; ExoFOP takes 10-30 s to serve it), kept in memory and fetched
+ * again once it is older than `deps.toiTtlMs`. Concurrent calls share one download. If a refresh
+ * fails, the previous download (up to 7 days old) is served with `stale` saying so; otherwise the
+ * error is thrown.
  */
 export class ToiCatalog {
   private table: ToiTable | null = null;
@@ -147,18 +157,29 @@ export class ToiCatalog {
   constructor(private readonly deps: Deps) {}
 
   async get(signal?: AbortSignal): Promise<ToiTable> {
-    if (this.table) return this.table;
-    this.inflight ??= this.download(signal).finally(() => {
+    const now = this.deps.now();
+    if (this.table && now - this.table.fetchedAt < this.deps.toiTtlMs) return this.table;
+    this.inflight ??= this.refresh(signal).finally(() => {
       this.inflight = null;
     });
     return this.inflight;
   }
 
-  private async download(signal?: AbortSignal): Promise<ToiTable> {
-    const text = await requestText(this.deps, TOI_URL, { source: TOI_SOURCE, timeoutMs: 90_000, signal });
-    const table = { rows: parseToiCsv(text), fetchedAt: this.deps.now() };
-    this.deps.log(`${TOI_SOURCE}: ${table.rows.length} rows loaded`);
-    this.table = table;
-    return table;
+  private async refresh(signal?: AbortSignal): Promise<ToiTable> {
+    try {
+      const text = await requestText(this.deps, TOI_URL, { source: TOI_SOURCE, timeoutMs: 90_000, signal });
+      const table = { rows: parseToiCsv(text), fetchedAt: this.deps.now(), stale: null };
+      this.deps.log(`${TOI_SOURCE}: ${table.rows.length} rows loaded`);
+      this.table = table;
+      return table;
+    } catch (e) {
+      const prev = this.table;
+      if (prev && this.deps.now() - prev.fetchedAt < MAX_STALE_MS) {
+        const why = `refresh failed (${e instanceof Error ? e.message : String(e)}); serving the copy downloaded ${new Date(prev.fetchedAt).toISOString()}`;
+        this.deps.log(`${TOI_SOURCE}: ${why}`);
+        return { ...prev, stale: why };
+      }
+      throw e;
+    }
   }
 }
