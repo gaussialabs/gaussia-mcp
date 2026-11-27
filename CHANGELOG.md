@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0 · 2026-11-27
+
+- `crossmatch_signal` now also checks the star's confirmed planets from the NASA Exoplanet Archive (TAP, `pscomppars`, matched by TIC ID) and returns `known_planet` when a planet matches at 1× with aligned transit times. A planet beats a TOI when both match.
+- Planets not known to transit (`tran_flag = 0`, e.g. radial-velocity planets) are compared by period only; the archive's predicted conjunction time is not used as a transit epoch.
+- If the archive is down the tool returns a source error instead of a verdict from the TOI table alone.
+- Recorded archive answers for L 98-59, TOI-700, TOI-101 (WASP-46) and a star with no planets (fetched 2026-11-27).
+
 ## v0.4.0 · 2026-11-27
 
 - `crossmatch_signal`: checks a transit signal (TIC, period, epoch, duration) against the TOIs on the same star. A match needs the period at known × n/m (1, 1/2, 2, 1/3, 3, 2/3, 3/2) within a relative tolerance (default 0.2%, or 3σ of the known period if larger) and transit times that coincide after propagating the TOI ephemeris (window: half the longer duration, or 3σ of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse.
