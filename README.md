@@ -121,7 +121,7 @@ Commitment 0xe60df2107077d59eb706432a888b7ed8626a905471df0f245646ca6455d8b7e5 fo
 
 ## Install
 
-Node 20 or newer. Not on npm yet: install from a checkout.
+Node 20 or newer. Install from a checkout (npm publish is in progress).
 
 ```sh
 git clone https://github.com/gaussialabs/gaussia-mcp.git
@@ -135,7 +135,7 @@ Claude Code, local checkout:
 claude mcp add gaussia -- node /absolute/path/to/gaussia-mcp/dist/index.js
 ```
 
-After npm publish (not published yet):
+After npm publish (in progress):
 
 ```sh
 claude mcp add gaussia -- npx gaussia-mcp
@@ -184,7 +184,7 @@ The full rules are in the `gaussia://rules/crossmatch` resource.
 ## Honest limits
 
 - `no_match` means only that the ExoFOP TOI table and the Exoplanet Archive's composite table have nothing at that period and phase on that star. Other things can still explain the signal: CTOIs that are not TOIs, eclipsing-binary catalogs, planets on neighbouring stars and systematics. None of these are checked.
-- `vet_signal` is two rough checks from catalog values. It does not read light curves, so odd/even depths, secondary eclipses, transit shape and centroid shifts are not tested. Gaussia's node pipeline is meant to do those, and it is not built yet.
+- `vet_signal` is two rough checks from catalog values. It does not read light curves, so odd/even depths, secondary eclipses, transit shape and centroid shifts are not tested. Gaussia's node pipeline is meant to do those; it is in progress.
 - The tools do not download or search light curves. `tess_observations` reports what exists at MAST.
 - The archive match uses TIC IDs from `pscomppars`. A planet whose archive entry has no TIC ID is missed.
 - Gaussia itself is at concept stage: nodes, the coordinator, review, contracts and the token are not deployed. `sealed_commit` and `verify_reveal` implement the draft commitment format in [SPEC.md](SPEC.md) so it can be checked before those parts exist.
