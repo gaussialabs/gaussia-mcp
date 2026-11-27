@@ -3,6 +3,7 @@ import { InputError } from "./http.js";
 import { parseTic, parseToi } from "./ids.js";
 import { TOI_SOURCE, TOI_URL, type Toi, type ToiCatalog } from "./sources/exofop.js";
 import { crossmatch, RATIOS, toBjd, type Known, type Signal } from "./crossmatch.js";
+import { ARCHIVE_SOURCE, ARCHIVE_TAP, planetsByTic, type ArchivePlanet } from "./sources/archive.js";
 import { coverage, type SectorCoverage } from "./coverage.js";
 import { CAOM_SOURCE, caomTimeseries, MAST_INVOKE, TESSCUT_SOURCE, TESSCUT_URL, tesscutSectors, TIC_SOURCE, ticById } from "./sources/mast.js";
 
@@ -154,6 +155,23 @@ export function toiToKnown(t: Toi): Known {
   };
 }
 
+export function planetToKnown(p: ArchivePlanet, tic: number): Known {
+  return {
+    kind: "planet",
+    id: p.pl_name,
+    tic_id: tic,
+    period_days: p.pl_orbper,
+    period_err_days: p.pl_orbpererr1,
+    // A planet not known to transit (tran_flag 0, e.g. found by radial velocity) has no observed transit
+    // time; pl_tranmid is then a predicted conjunction, so only the period is compared.
+    epoch_bjd: p.tran_flag === 0 ? null : p.pl_tranmid,
+    epoch_err_days: p.tran_flag === 0 ? null : p.pl_tranmiderr1,
+    duration_hours: p.pl_trandur,
+    disposition: "confirmed",
+    note: [p.disc_facility && `discovered by ${p.disc_facility}`, p.disc_year, p.tran_flag === 0 ? "not known to transit, period-only check" : null].filter(Boolean).join(", ") || null,
+  };
+}
+
 export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: AbortSignal): Promise<Output> {
   const tic = parseTic(args.tic_id);
   const epoch = toBjd(args.epoch, args.epoch_format ?? "auto");
@@ -161,8 +179,9 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
   const tol = args.period_tolerance ?? DEFAULT_PERIOD_TOLERANCE;
   const sig: Signal = { period_days: args.period_days, epoch_bjd: epoch, duration_hours: args.duration_hours };
 
-  const table = await ctx.tois.get(signal);
-  const known = table.rows.filter((r) => r.tic_id === tic).map(toiToKnown);
+  const [table, planets] = await Promise.all([ctx.tois.get(signal), planetsByTic(ctx.deps, tic, signal)]);
+  const tois = table.rows.filter((r) => r.tic_id === tic).map(toiToKnown);
+  const known = [...planets.map((p) => planetToKnown(p, tic)), ...tois];
   const result = crossmatch(sig, known, tol);
 
   const data = {
@@ -172,10 +191,13 @@ export async function crossmatchSignal(ctx: Ctx, args: CrossmatchArgs, signal?: 
     reasons: result.reasons,
     matches: result.matches,
     near_misses: result.near_misses,
-    checked: { tois_on_star: known.length },
+    checked: { tois_on_star: tois.length, confirmed_planets_on_star: planets.length },
     settings: { period_tolerance: tol, ratios: RATIOS.map((r) => (r.m === 1 ? `${r.n}` : `${r.n}/${r.m}`)) },
-    sources: [{ name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt) }],
+    sources: [
+      { name: TOI_SOURCE, url: TOI_URL, fetched_at: iso(table.fetchedAt) },
+      { name: ARCHIVE_SOURCE, url: ARCHIVE_TAP, fetched_at: iso(ctx.deps.now()) },
+    ],
   };
-  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${known.length} TOI(s) on the star (ExoFOP, fetched ${iso(table.fetchedAt)}).`;
+  const summary = `Verdict for TIC ${tic}, P=${args.period_days} d: ${result.verdict}\n${result.reasons.map((r) => `- ${r}`).join("\n")}\nChecked ${tois.length} TOI(s) (ExoFOP, fetched ${iso(table.fetchedAt)}) and ${planets.length} confirmed planet(s) (NASA Exoplanet Archive) on the star.`;
   return { summary, data };
 }

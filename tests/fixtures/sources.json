@@ -33,6 +33,22 @@
     "mast-tesscut-150428135.json": {
       "fetched": "2026-11-27",
       "url": "https://mast.stsci.edu/tesscut/api/v0.1/sector?ra=97.0967865903209&dec=-65.5793115481931&radius=0m"
+    },
+    "archive-pscomppars-307210830.json": {
+      "fetched": "2026-11-27",
+      "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync (pscomppars, tic_id='TIC 307210830', format=json)"
+    },
+    "archive-pscomppars-150428135.json": {
+      "fetched": "2026-11-27",
+      "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync (pscomppars, tic_id='TIC 150428135', format=json)"
+    },
+    "archive-pscomppars-231663901.json": {
+      "fetched": "2026-11-27",
+      "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync (pscomppars, tic_id='TIC 231663901', format=json)"
+    },
+    "archive-pscomppars-150437346.json": {
+      "fetched": "2026-11-27",
+      "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync (pscomppars, tic_id='TIC 150437346', format=json). TOI-2220 has no confirmed planet; tests use this empty answer for any star without one"
     }
   }
 }

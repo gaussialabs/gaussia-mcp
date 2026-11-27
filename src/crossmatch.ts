@@ -141,7 +141,7 @@ export function crossmatch(signal: Signal, known: Known[], relTol: number): Cros
     const ep = epochCheck(signal, k, pm.ratio);
     const per = `period ${f(signal.period_days, 6)} d = ${label} ${name(k)}'s ${f(k.period_days, 6)} d (diff ${Number((pm.rel_diff * 100).toPrecision(2))}%)`;
     if (!ep) {
-      matches.push({ known: k, kind: "period_no_epoch", ratio: label, alias: true, period: pm, epoch: null, reason: `${per}; ${k.id} has no published transit epoch, so transit times could not be compared` });
+      matches.push({ known: k, kind: "period_no_epoch", ratio: label, alias: true, period: pm, epoch: null, reason: `${per}; ${k.id} has no observed transit epoch, so only the period was compared` });
     } else if (ep.aligned) {
       matches.push({ known: k, kind: "period_and_epoch", ratio: label, alias, period: pm, epoch: ep, reason: `${per}, and transit times line up (offset ${f(ep.offset_hours, 2)} h, window ±${f(ep.window_hours, 2)} h over ${f(ep.cycles, 1)} orbits)` });
     } else if (!alias && atHalfPhase(signal, k, ep.window_hours)) {

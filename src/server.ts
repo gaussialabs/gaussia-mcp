@@ -9,9 +9,9 @@ import { crossmatchSignal, starInfo, tessObservations, toiLookup, type Ctx, type
 
 export { SERVER_NAME, SERVER_VERSION };
 
-const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table, MAST TIC).
+const INSTRUCTIONS = `Gaussia tools for TESS exoplanet signals, backed by public NASA data (ExoFOP TOI table, NASA Exoplanet Archive, MAST).
 Use toi_lookup to see which TESS Objects of Interest a star already has, star_info for the star's TIC parameters, tess_observations for the sectors and light curves TESS has for it.
-Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs on the star, including period aliases and transit times.
+Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs and confirmed planets on the star, including period aliases and transit times.
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
 
@@ -95,7 +95,7 @@ export function createServer(deps: Deps): McpServer {
     {
       title: "Cross-match a transit signal against known objects",
       description:
-        "Checks a transit signal (TIC ID, period, epoch, duration) against the TOIs on the same star from the ExoFOP TOI table. A match needs the period at the known period times n/m (n, m up to 3: 1, 1/2, 2, 1/3, 3, 2/3, 3/2) within the tolerance, and transit times that line up after propagating the known ephemeris (window: half the longer duration, or 3 sigma of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse. Returns verdict known_toi, alias_of_known or no_match with a reason per match and period-only near misses. no_match only means this catalog has nothing there; it is not a discovery.",
+        "Checks a transit signal (TIC ID, period, epoch, duration) against the TOIs on the same star (ExoFOP TOI table) and its confirmed planets (NASA Exoplanet Archive, pscomppars table, matched by TIC ID). A match needs the period at the known period times n/m (n, m up to 3: 1, 1/2, 2, 1/3, 3, 2/3, 3/2) within the tolerance, and transit times that line up after propagating the known ephemeris (window: half the longer duration, or 3 sigma of the propagated ephemeris). A same-period signal at phase 0.5 is flagged as a likely secondary eclipse. Returns verdict known_planet, known_toi, alias_of_known or no_match with a reason per match and period-only near misses. no_match only means these catalogs have nothing there; it is not a discovery.",
       inputSchema: {
         tic_id: TIC,
         period_days: z.number().positive().max(2000).describe("Orbital period of the signal in days."),

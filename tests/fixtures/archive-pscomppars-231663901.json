@@ -1,0 +1,15 @@
+[
+{"pl_name": "WASP-46 b",
+"hostname": "WASP-46",
+"tic_id": "TIC 231663901",
+"pl_orbper": 1.43036763000,
+"pl_orbpererr1": 0.00000093000,
+"pl_tranmid": 2455392.31659000,
+"pl_tranmiderr1": 0.00058000,
+"pl_trandur": 1.6165994,
+"pl_rade": 13.15936600,
+"pl_trandep": 1.89607123,
+"tran_flag": 1,
+"disc_facility": "SuperWASP",
+"disc_year": 2011}
+]

@@ -48,8 +48,16 @@ export function fakeFetch(routes: Route[]) {
 
 export const TOI_ROUTE: Route = { match: /exofop\.ipac\.caltech\.edu\/tess\/download_toi\.php/, file: "exofop-toi-subset.csv" };
 
+/** Archive answers recorded 2026-11-27. The TOI-2220 answer (no planets) stands in for any other star. */
+export const ARCHIVE_ROUTES: Route[] = [
+  { match: /exoplanetarchive\.ipac\.caltech\.edu\/TAP\/sync.*TIC%20307210830/, file: "archive-pscomppars-307210830.json" },
+  { match: /exoplanetarchive\.ipac\.caltech\.edu\/TAP\/sync.*TIC%20150428135/, file: "archive-pscomppars-150428135.json" },
+  { match: /exoplanetarchive\.ipac\.caltech\.edu\/TAP\/sync.*TIC%20231663901/, file: "archive-pscomppars-231663901.json" },
+  { match: /exoplanetarchive\.ipac\.caltech\.edu\/TAP\/sync/, file: "archive-pscomppars-150437346.json" },
+];
+
 export function testDeps(over: Partial<Deps> = {}): Deps {
-  return { fetch: fakeFetch([TOI_ROUTE]).fetch, log: () => {}, now: () => Date.UTC(2026, 10, 27), ...over };
+  return { fetch: fakeFetch([TOI_ROUTE, ...ARCHIVE_ROUTES]).fetch, log: () => {}, now: () => Date.UTC(2026, 10, 27), ...over };
 }
 
 export async function connect(deps: Deps) {
