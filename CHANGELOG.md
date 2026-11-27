@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.0 · 2026-11-27
+
+- Every request is retried on network errors, timeouts and HTTP 408/425/429/5xx: 2 retries by default (`GAUSSIA_RETRIES`, 0-5), backoff 1 s then 3 s, or the server's `Retry-After` up to 10 s. Errors say how many attempts were made (`MAST TIC catalog: HTTP 502 after 3 attempts`). A 404 is not retried.
+- The ExoFOP TOI table is fetched again once it is older than `GAUSSIA_TOI_TTL_HOURS` (default 6). If that refresh fails, the previous copy is served for up to 7 days with `source.stale` and a warning line saying why and when it was downloaded; older than that, the error is returned.
+
 ## v0.5.0 · 2026-11-27
 
 - `crossmatch_signal` now also checks the star's confirmed planets from the NASA Exoplanet Archive (TAP, `pscomppars`, matched by TIC ID) and returns `known_planet` when a planet matches at 1× with aligned transit times. A planet beats a TOI when both match.
