@@ -1,0 +1,10 @@
+{
+  "note": "Real responses recorded from the public sources below on the date shown, saved unchanged except where 'edit' says otherwise. Unit tests replay them; live tests (GAUSSIA_LIVE=1) hit the sources again.",
+  "files": {
+    "exofop-toi-subset.csv": {
+      "fetched": "2026-11-27",
+      "url": "https://exofop.ipac.caltech.edu/tess/download_toi.php?sort=toi&output=csv",
+      "edit": "Row subset of the full table (8,175 rows): the header plus the TOIs on TIC 307210830 (L 98-59) and TIC 150428135 (TOI-700), every TOI within 20 arcmin of either star, TOI 101.01 and TOI 7102.01. Rows are unchanged."
+    }
+  }
+}

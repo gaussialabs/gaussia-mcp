@@ -1,0 +1,53 @@
+{
+  "name": "gaussia-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Gaussia: TOI lookup, signal cross-match against TOIs and confirmed planets, TESS sector and light-curve coverage, TIC star parameters, and blind-matching commitments. Public NASA/MAST/ExoFOP data, no API keys.",
+  "license": "Apache-2.0",
+  "homepage": "https://gaussia.app",
+  "author": "Gaussia",
+  "type": "module",
+  "bin": {
+    "gaussia-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "test": "vitest run",
+    "test:live": "GAUSSIA_LIVE=1 vitest run tests/live.test.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "demo": "node scripts/demo.mjs",
+    "prepare": "tsup"
+  },
+  "keywords": [
+    "gaussia",
+    "mcp",
+    "model-context-protocol",
+    "tess",
+    "exoplanets",
+    "toi",
+    "mast",
+    "exofop",
+    "astronomy",
+    "ai-agents",
+    "desci"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "viem": "2.58.6",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "packageManager": "pnpm@12.16.1"
+}
