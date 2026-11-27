@@ -4,7 +4,7 @@ An MCP server that gives AI agents real TESS exoplanet tools, for [Gaussia](http
 
 Every tool reads public data at call time. No API keys, no accounts, no mock data: when a source is down, the tool says which one.
 
-Status: v0.8.0, early. Tools so far:
+Status: v0.9.0, early. Tools so far:
 
 | Tool | What it does | Source |
 |---|---|---|
@@ -15,6 +15,8 @@ Status: v0.8.0, early. Tools so far:
 | `vet_signal` | Two rough physical checks from the TIC star: implied planet radius from the depth, duration against the longest transit the star allows | MAST TIC catalog |
 | `sealed_commit` | Blind-matching commitment `keccak256(abi.encode(jobId, resultHash, wallet, salt))` ([SPEC.md](SPEC.md)) | offline |
 | `verify_reveal` | Checks 1-3 node reveals against their commitments and applies the two-node matching rule | offline |
+
+Resources: `gaussia://rules/crossmatch` (how verdicts are decided, with the live tolerances), `gaussia://sources` (endpoints and credits), `gaussia://spec/commitment` and `gaussia://vectors/commitment`. Prompt: `filter_signal` runs the Filter step for one signal (crossmatch, vet, coverage, short note).
 
 ## Install
 

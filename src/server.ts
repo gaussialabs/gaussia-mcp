@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { SERVER_NAME, SERVER_VERSION, type Deps } from "./deps.js";
 import { InputError, SourceError } from "./http.js";
+import { registerResources } from "./resources.js";
 import { ToiCatalog } from "./sources/exofop.js";
 import { crossmatchSignal, sealedCommit, starInfo, tessObservations, toiLookup, verifyReveal, vetSignal, type Ctx, type Output } from "./tools.js";
 
@@ -14,6 +15,7 @@ Use toi_lookup to see which TESS Objects of Interest a star already has, star_in
 Before treating any transit signal as new, run crossmatch_signal: it checks the TOIs and confirmed planets on the star, including period aliases and transit times. vet_signal adds two rough physical checks (implied planet radius, duration vs the star's density).
 Every number comes from the named source at the time of the call; when a source fails the tool returns an error naming it, never substitute data.
 sealed_commit and verify_reveal compute and check blind-matching commitments (SPEC.md); they run offline and send nothing.
+Resources: gaussia://rules/crossmatch (how verdicts are decided), gaussia://sources (sources and credits), gaussia://spec/commitment. Prompt filter_signal runs the whole Filter step for one signal.
 Say "candidate", never "planet": only follow-up observations confirm a planet.`;
 
 const READ_LOCAL = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
@@ -174,5 +176,6 @@ export function createServer(deps: Deps): McpServer {
     async (args) => run(deps, "verify_reveal", async () => verifyReveal(args)),
   );
 
+  registerResources(server);
   return server;
 }
