@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.0 · 2026-11-27
+
+- `vet_signal`: two rough physical checks from the host star's TIC radius, mass and contamination ratio. (1) Implied planet radius from the depth (Rp/R* = √depth, plus a version with the TIC contamination removed), flagging `deep_eclipse` (Rp/R* ≥ 0.5) and `too_large_for_planet` (> 2 R_Jup). (2) The observed duration against the longest central transit for a circular orbit (Kepler's third law), flagging `too_long` (> 1.5×), `very_short` (< 0.15×) and `inside_star`. Also `crowded` when the contamination ratio is above 0.5.
+- The result lists its assumptions and says plainly what it does not test (odd/even depths, secondary eclipse, shape, centroids: they need the light curve).
+- Math tests: Earth's a/R* ≈ 215 and 13-hour central transit; a 1% dip on the Sun ≈ 1 R_Jup.
+
 ## v0.7.0 · 2026-11-27
 
 - `sealed_commit`: computes the blind-matching commitment `keccak256(abi.encode(bytes32 jobId, bytes32 resultHash, address wallet, bytes32 salt))` with viem. Generates a 32-byte salt when none is given and says to keep it secret.
